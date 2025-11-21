@@ -18,6 +18,35 @@ namespace ControlBrazoRobotico
             ActualizarEstadoConexion();
         }
 
+        private void EnviarMovimientoSuave(int s1, int s2, int s3, int s4, int s5, int s6, int tiempoMs = 2000)
+        {
+            if (!conectado) return;
+
+            try
+            {
+                // Formato: "SMOOTH:90,45,135,90,90,73,2000"
+                string comando = $"SMOOTH:{s1},{s2},{s3},{s4},{s5},{s6},{tiempoMs}\n";
+                serialPort.Write(comando);
+                MostrarMensaje($"Enviado movimiento suave: {comando.Trim()}");
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje($"Error enviando movimiento suave: {ex.Message}");
+            }
+        }
+
+        private void BtnMovimientoSuave_Click(object sender, RoutedEventArgs e)
+        {
+            int s1 = (int)sliderCoordServo1.Value;
+            int s2 = (int)sliderCoordServo2.Value;
+            int s3 = (int)sliderCoordServo3.Value;
+            int s4 = (int)sliderServo4.Value;
+            int s5 = (int)sliderServo5.Value;
+            int s6 = (int)sliderServo6.Value;
+
+            EnviarMovimientoSuave(s1, s2, s3, s4, s5, s6, 1500);
+        }
+
         private void CargarPuertosCOM()
         {
             try

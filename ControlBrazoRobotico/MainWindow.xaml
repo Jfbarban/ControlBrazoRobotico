@@ -115,6 +115,8 @@
                             <Button Content="Posición Home" Click="BtnPosicionHome_Click" Margin="5" Padding="10,5"/>
                             <Button Content="Posición Reposo" Click="BtnPosicionReposo_Click" Margin="5" Padding="10,5"/>
                             <Button Content="Posición Trabajo" Click="BtnPosicionTrabajo_Click" Margin="5" Padding="10,5"/>
+                            <Button Content="Movimiento Suave" Click="BtnMovimientoSuave_Click" Margin="0,10,0,0" Padding="10,5" 
+        Background="LightBlue" ToolTip="Movimiento coordinado y suave hacia la posición"/>
                         </StackPanel>
                     </GroupBox>
 
