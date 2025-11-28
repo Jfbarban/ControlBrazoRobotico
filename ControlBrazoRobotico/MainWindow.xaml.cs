@@ -13,9 +13,13 @@ namespace ControlBrazoRobotico
 
         public MainWindow()
         {
+
             InitializeComponent();
+
             CargarPuertosCOM();
+
             ActualizarEstadoConexion();
+
         }
 
         private void EnviarMovimientoSuave(int s1, int s2, int s3, int s4, int s5, int s6, int tiempoMs = 2000)
@@ -137,7 +141,15 @@ namespace ControlBrazoRobotico
         {
             if (sender == sliderServo1)
             {
-                txtServo1.Text = $"{e.NewValue:0}°";
+                if (e.NewValue.Equals(null))
+                {
+                    txtServo1.Text = "0";
+                }
+                else
+                {
+                    txtServo1.Text = (e.NewValue).ToString();
+                }
+                    
                 EnviarComandoServo(1, (int)e.NewValue);
             }
             else if (sender == sliderServo2)

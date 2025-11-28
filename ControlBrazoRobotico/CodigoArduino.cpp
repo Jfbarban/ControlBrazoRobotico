@@ -2,10 +2,17 @@
 #include <Servo.h>
 
 // Braccio usa estos pines por defecto
-M1=11, M2=10, M3=9, M4=6, M5=5, M6=3
+//M1=11, M2=10, M3=9, M4=6, M5=5, M6=3
 
 // Posiciones actuales de los servos
 int posiciones[6] = { 90, 90, 90, 90, 90, 73 }; // 73 para pinza abierta
+
+Servo base;
+Servo shoulder;
+Servo elbow;
+Servo wrist_rot;
+Servo wrist_ver;
+Servo gripper;
 
 void setup() {
     Serial.begin(9600);
