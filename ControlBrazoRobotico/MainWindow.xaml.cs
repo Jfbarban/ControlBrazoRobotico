@@ -3,6 +3,8 @@ using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
 using System.Text;
+using MQTTnet;
+using MQTTnet.Client;
 
 namespace ControlBrazoRobotico
 {
@@ -10,6 +12,14 @@ namespace ControlBrazoRobotico
     {
         private SerialPort serialPort;
         private bool conectado = false;
+
+        // --- Nuevos Miembros MQTT ---
+        private RobotMqttService _mqttService;
+        private ConexaoMode _conexaoMode = ConexaoMode.Serial;
+        private const string MqttTopic = "mi_usuario/robot/comandos"; // Usa el mismo topic que el Agente Robot
+
+        // Enum para el estado de la conexión (Serial o MQTT)
+        private enum ConexaoMode { Serial, Mqtt }
 
         public MainWindow()
         {
@@ -20,9 +30,77 @@ namespace ControlBrazoRobotico
 
             ActualizarEstadoConexion();
 
+            // Inicializa el servicio MQTT al inicio
+            _mqttService = new RobotMqttService(MqttTopic);
+
+            // Configura el estado inicial del switch de modo
+            cmbModoConexion.SelectedIndex = 0;
+
         }
 
-        private void EnviarMovimientoSuave(int s1, int s2, int s3, int s4, int s5, int s6, int tiempoMs = 2000)
+        // ------------------------------------------
+        // LÓGICA DE ENVÍO UNIFICADA (SERIAL O MQTT)
+        // ------------------------------------------
+
+        // TODOS los métodos que envían comandos deben ser ASÍNCRONOS (async)
+        private async Task EnviarComando(string comando, string nombreAccion)
+        {
+            if (_conexaoMode == ConexaoMode.Serial)
+            {
+                if (!conectado) return;
+                try
+                {
+                    // Comando Serial (Necesita \n al final)
+                    serialPort.Write(comando + "\n");
+                    MostrarMensaje($"[SERIAL] Enviado {nombreAccion}: {comando}");
+                }
+                catch (Exception ex)
+                {
+                    MostrarMensaje($"Error enviando {nombreAccion} (SERIAL): {ex.Message}");
+                }
+            }
+            else // Modo MQTT
+            {
+                if (!_mqttService.IsConnected) return;
+                try
+                {
+                    // Comando MQTT (El servicio agrega \n si es necesario)
+                    await _mqttService.EnviarComandoAsync(comando);
+                    MostrarMensaje($"[MQTT] Enviado {nombreAccion}: {comando}");
+                }
+                catch (Exception ex)
+                {
+                    MostrarMensaje($"Error enviando {nombreAccion} (MQTT): {ex.Message}");
+                }
+            }
+        }
+
+        private async void BtnCambiarModo_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbModoConexion.SelectedItem == null) return;
+
+            var nuevoModoStr = (cmbModoConexion.SelectedItem as ComboBoxItem).Content.ToString();
+            var nuevoModo = (nuevoModoStr == "Serial (COM)") ? ConexaoMode.Serial : ConexaoMode.Mqtt;
+
+            // 1. Desconectar el modo actualmente activo antes de cambiar
+            if (conectado)
+            {
+                // Usamos la lógica de desconexión sin argumentos
+                await Task.Run(() => BtnDesconectar_Click(null, null));
+            }
+
+            // 2. Ocultar/Mostrar controles específicos (opcional, pero útil)
+            cmbPuertos.IsEnabled = (nuevoModo == ConexaoMode.Serial);
+            cmbBaudRate.IsEnabled = (nuevoModo == ConexaoMode.Serial);
+
+            // 3. Cambiar el modo
+            _conexaoMode = nuevoModo;
+            ActualizarEstadoConexion();
+
+            MostrarMensaje($"Modo de conexión cambiado a: {_conexaoMode}");
+        }
+
+        private async void EnviarMovimientoSuave(int s1, int s2, int s3, int s4, int s5, int s6, int tiempoMs = 2000)
         {
             if (!conectado) return;
 
@@ -30,7 +108,7 @@ namespace ControlBrazoRobotico
             {
                 // Formato: "SMOOTH:90,45,135,90,90,73,2000"
                 string comando = $"SMOOTH:{s1},{s2},{s3},{s4},{s5},{s6},{tiempoMs}\n";
-                serialPort.Write(comando);
+                await EnviarComando(comando, "Movimiento Suave");
                 MostrarMensaje($"Enviado movimiento suave: {comando.Trim()}");
             }
             catch (Exception ex)
@@ -72,45 +150,87 @@ namespace ControlBrazoRobotico
             }
         }
 
-        private void BtnConectar_Click(object sender, RoutedEventArgs e)
+        // ------------------------------------------
+        // LÓGICA DE ENVÍO UNIFICADA (SERIAL O MQTT)
+        // ------------------------------------------
+
+        private async void BtnConectar_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbPuertos.SelectedItem == null)
+            if (_conexaoMode == ConexaoMode.Serial)
             {
-                MostrarMensaje("Selecciona un puerto COM");
-                return;
-            }
+                // --- LÓGICA DE CONEXIÓN SERIAL ---
+                if (cmbPuertos.SelectedItem == null)
+                {
+                    MostrarMensaje("Selecciona un puerto COM");
+                    return;
+                }
+                try
+                {
+                    string puerto = cmbPuertos.SelectedItem.ToString();
+                    // Asegúrate de castear correctamente el ComboBoxItem
+                    int baudRate = int.Parse((cmbBaudRate.SelectedItem as ComboBoxItem).Content.ToString());
 
-            try
+                    serialPort = new SerialPort(puerto, baudRate);
+                    serialPort.DataReceived += SerialPort_DataReceived;
+                    serialPort.Open();
+
+                    conectado = true;
+                    MostrarMensaje($"Conectado a {puerto} - {baudRate} baudios (SERIAL)");
+                }
+                catch (Exception ex)
+                {
+                    conectado = false;
+                    MostrarMensaje($"Error al conectar Serial: {ex.Message}");
+                }
+            }
+            else // Modo MQTT
             {
-                string puerto = cmbPuertos.SelectedItem.ToString();
-                int baudRate = int.Parse((cmbBaudRate.SelectedItem as ComboBoxItem).Content.ToString());
+                // --- LÓGICA DE CONEXIÓN MQTT ---
+                try
+                {
+                    // La conexión es asíncrona
+                    await _mqttService.ConectarAsync();
 
-                serialPort = new SerialPort(puerto, baudRate);
-                serialPort.DataReceived += SerialPort_DataReceived;
-                serialPort.Open();
-
-                conectado = true;
-                ActualizarEstadoConexion();
-                MostrarMensaje($"Conectado a {puerto} - {baudRate} baudios");
+                    // Usamos la misma bandera 'conectado' para el estado general de la UI
+                    conectado = _mqttService.IsConnected;
+                    MostrarMensaje($"Conectado al Broker MQTT: {conectado}");
+                }
+                catch (Exception ex)
+                {
+                    conectado = false;
+                    MostrarMensaje($"Error al conectar MQTT: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                MostrarMensaje($"Error al conectar: {ex.Message}");
-            }
+            ActualizarEstadoConexion();
         }
 
-        private void BtnDesconectar_Click(object sender, RoutedEventArgs e)
+        private async void BtnDesconectar_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (serialPort != null && serialPort.IsOpen)
+                if (_conexaoMode == ConexaoMode.Serial)
                 {
-                    serialPort.Close();
-                    serialPort.Dispose();
+                    // --- LÓGICA DE DESCONEXIÓN SERIAL ---
+                    if (serialPort != null && serialPort.IsOpen)
+                    {
+                        serialPort.Close();
+                        serialPort.Dispose();
+                    }
+                    MostrarMensaje("Desconectado Serial");
                 }
+                else // Modo MQTT
+                {
+                    // --- LÓGICA DE DESCONEXIÓN MQTT ---
+                    if (_mqttService.IsConnected)
+                    {
+                        // La desconexión es asíncrona
+                        await _mqttService.DesconectarAsync();
+                        MostrarMensaje("Desconectado MQTT");
+                    }
+                }
+
                 conectado = false;
                 ActualizarEstadoConexion();
-                MostrarMensaje("Desconectado");
             }
             catch (Exception ex)
             {
@@ -247,38 +367,18 @@ namespace ControlBrazoRobotico
             EnviarPosicionesCoordinadas(s1, s2, s3, s4, s5, s6);
         }
 
-        private void EnviarComandoServo(int numeroServo, int posicion)
+        private async void EnviarComandoServo(int numeroServo, int posicion)
         {
-            if (!conectado) return;
-
-            try
-            {
-                // Formato: "S1:90" donde S1 = Servo 1, 90 = posición
-                string comando = $"S{numeroServo}:{posicion}\n";
-                serialPort.Write(comando);
-                MostrarMensaje($"Enviado: {comando.Trim()}");
-            }
-            catch (Exception ex)
-            {
-                MostrarMensaje($"Error enviando comando: {ex.Message}");
-            }
+            // Formato: "S1:90"
+            string comando = $"S{numeroServo}:{posicion}";
+            await EnviarComando(comando, $"Servo {numeroServo}");
         }
 
-        private void EnviarPosicionesCoordinadas(int s1, int s2, int s3, int s4, int s5, int s6)
+        private async void EnviarPosicionesCoordinadas(int s1, int s2, int s3, int s4, int s5, int s6)
         {
-            if (!conectado) return;
-
-            try
-            {
-                // Formato: "ALL:90,45,135,90,90,90" para todos los servos
-                string comando = $"ALL:{s1},{s2},{s3},{s4},{s5},{s6}\n";
-                serialPort.Write(comando);
-                MostrarMensaje($"Enviado coordinado: {comando.Trim()}");
-            }
-            catch (Exception ex)
-            {
-                MostrarMensaje($"Error enviando comando coordinado: {ex.Message}");
-            }
+            // Formato: "ALL:90,45,135,90,90,90"
+            string comando = $"ALL:{s1},{s2},{s3},{s4},{s5},{s6}";
+            await EnviarComando(comando, "Coordinado");
         }
 
         private void ActualizarSlidersCoordinados(int s1, int s2, int s3, int s4, int s5, int s6)
@@ -320,6 +420,12 @@ namespace ControlBrazoRobotico
             if (serialPort != null && serialPort.IsOpen)
             {
                 serialPort.Close();
+            }
+            // También desconecta el cliente MQTT al cerrar la aplicación
+            if (_mqttService != null && _mqttService.IsConnected)
+            {
+                // Usamos Wait() porque OnClosed no es async
+                Task.Run(() => _mqttService.DesconectarAsync()).Wait();
             }
             base.OnClosed(e);
         }
