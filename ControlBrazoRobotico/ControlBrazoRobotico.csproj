@@ -2,11 +2,20 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Recursos\Icono.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Recursos\Brazo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Recursos\Icono.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
@@ -15,6 +24,12 @@
 
   <ItemGroup>
     <Reference Include="System.IO.Ports" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Recursos\Brazo.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
 </Project>

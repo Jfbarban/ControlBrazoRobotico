@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36429.23
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11222.16 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControlBrazoRobotico", "ControlBrazoRobotico\ControlBrazoRobotico.csproj", "{5107F74E-3959-4FD1-9160-DA48E60515E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Escucha Robot", "Escucha Robot\Escucha Robot.csproj", "{AEB7BB0D-B211-011F-FED0-44A7BA34B75B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControlBrazoRobotico.Tests", "ControlBrazoRobotico.Tests\ControlBrazoRobotico.Tests.csproj", "{694AF9D4-DB87-D506-4175-4C6F05B17EEB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{AEB7BB0D-B211-011F-FED0-44A7BA34B75B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AEB7BB0D-B211-011F-FED0-44A7BA34B75B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AEB7BB0D-B211-011F-FED0-44A7BA34B75B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{694AF9D4-DB87-D506-4175-4C6F05B17EEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{694AF9D4-DB87-D506-4175-4C6F05B17EEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{694AF9D4-DB87-D506-4175-4C6F05B17EEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{694AF9D4-DB87-D506-4175-4C6F05B17EEB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
