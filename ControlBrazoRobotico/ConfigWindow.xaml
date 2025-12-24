@@ -1,0 +1,38 @@
+﻿<Window x:Class="ControlBrazoRobotico.ConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AJUSTES TÉCNICOS" Height="620" Width="420" 
+        Background="#121212" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+
+    <Grid Margin="20">
+        <StackPanel>
+            <TextBlock Text="CONFIGURACIÓN DEL SISTEMA" Foreground="#FF6D00" FontWeight="Bold" FontSize="16" Margin="0,0,0,15"/>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="MQTT BROKER / IP" Foreground="#888" FontSize="10" FontWeight="Bold"/>
+                    <TextBox x:Name="txtMqtt" Background="#2D2D2D" Foreground="White" BorderThickness="0" Margin="0,5,0,10" Height="25" VerticalContentAlignment="Center" Padding="5,0"/>
+
+                    <TextBlock Text="BAUDRATE (SERIAL)" Foreground="#888" FontSize="10" FontWeight="Bold"/>
+                    <ComboBox x:Name="cmbBaud" Margin="0,5,0,0" Height="25"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="LIMITACIÓN DE RANGOS DE SERVOS" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="5,0,0,5"/>
+            <Border Style="{StaticResource CardStyle}">
+                <Grid x:Name="gridServos">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </Border>
+
+            <UniformGrid Columns="2" Margin="0,20,0,0">
+                <Button Content="CANCELAR" Style="{StaticResource BtnDark}" Margin="5" Click="BtnCancelar_Click"/>
+                <Button Content="GUARDAR CONFIG" Style="{StaticResource BtnOrange}" Margin="5" Click="BtnGuardar_Click"/>
+            </UniformGrid>
+        </StackPanel>
+    </Grid>
+</Window>
