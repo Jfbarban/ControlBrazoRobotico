@@ -1,9 +1,9 @@
 ﻿<Window x:Class="ControlBrazoRobotico.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Industrial Robot Control - PRO" Height="748" Width="770"
+        Title="Industrial Robot Control - PRO" SizeToContent="Height" Width="780"
         Background="#121212" WindowStartupLocation="CenterScreen"
-        Icon="pack://application:,,,/Recursos/Icono.ico">
+        Icon="pack://application:,,,/Recursos/Icono.ico" MinHeight="550" MinWidth="625">
 
     <Window.Resources>
         <SolidColorBrush x:Key="TextWhite" Color="#F0F0F0"/>
@@ -141,13 +141,13 @@
             <DockPanel>
                 <StackPanel Orientation="Horizontal" Height="36">
                     <TextBlock Text="MODO:" VerticalAlignment="Center" Foreground="{StaticResource TextDim}" Margin="0,0,10,0" FontWeight="Bold" FontSize="11"/>
-                    <ComboBox x:Name="cmbModoConexion" Width="130" SelectedIndex="0" Margin="0,0,15,0" SelectionChanged="BtnCambiarModo_Click" Height="24">
+                    <ComboBox x:Name="cmbModoConexion" Style="{StaticResource ModernComboBox}" Width="130" SelectedIndex="0" Margin="0,0,15,0" SelectionChanged="BtnCambiarModo_Click" Height="24">
                         <ComboBoxItem Content="Serial (COM)"/>
                         <ComboBoxItem Content="Remoto (MQTT)"/>
                     </ComboBox>
 
                     <TextBlock Text="PUERTO:" VerticalAlignment="Center" Foreground="{StaticResource TextDim}" Margin="0,0,10,0" FontWeight="Bold" FontSize="11"/>
-                    <ComboBox x:Name="cmbPuertos" Width="90" Margin="0,0,15,0" Height="25"/>
+                    <ComboBox x:Name="cmbPuertos" Style="{StaticResource ModernComboBox}" Width="90" Margin="0,0,15,0" Height="25"/>
 
                     <Button x:Name="btnConectar" Content="CONECTAR" Style="{StaticResource BtnOrange}" Width="100" Click="BtnConectar_Click"/>
                     <Button x:Name="btnDesconectar" Content="OFF" Style="{StaticResource BtnDark}" Width="45" Margin="8,0" IsEnabled="False" Click="BtnDesconectar_Click"/>
@@ -180,7 +180,7 @@
                 </Border.Background>
             </Border>
 
-            <ScrollViewer x:Name="panelControlManual" IsEnabled="False" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="panelControlManual" Grid.Column="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
                         <StackPanel>

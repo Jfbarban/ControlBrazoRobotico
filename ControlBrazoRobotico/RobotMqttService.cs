@@ -1,6 +1,7 @@
 ﻿using MQTTnet;
 using MQTTnet.Client;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System;
 
@@ -10,11 +11,14 @@ namespace ControlBrazoRobotico
     {
         private readonly IMqttClient _mqttClient;
         private readonly string _topic;
-        private readonly string _broker = "test.mosquitto.org"; // Broker público para pruebas
+        private readonly string _broker;
 
-        public RobotMqttService(string topic)
+        public RobotMqttService(string topic, string broker)
         {
-            _topic = topic;
+            // Si el broker viene vacío desde la config, usamos el por defecto
+            _topic = string.IsNullOrWhiteSpace(topic) ? "robot/comandos" : topic;
+            _broker = string.IsNullOrWhiteSpace(broker) ? "test.mosquitto.org" : broker;
+
             var mqttFactory = new MqttFactory();
             _mqttClient = mqttFactory.CreateMqttClient();
         }
@@ -23,20 +27,24 @@ namespace ControlBrazoRobotico
 
         public async Task ConectarAsync()
         {
-            if (_mqttClient.IsConnected) return;
+            // Si ya está conectado, no hacemos nada
+            if (IsConnected) return;
 
             var options = new MqttClientOptionsBuilder()
                 .WithTcpServer(_broker)
                 .WithCleanSession()
                 .Build();
 
-            // Manejar reconexiones o errores aquí si es necesario
-            await _mqttClient.ConnectAsync(options);
+            // Usamos un timeout para que no se quede colgado si la IP es incorrecta
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+            {
+                await _mqttClient.ConnectAsync(options, timeout.Token);
+            }
         }
 
         public async Task DesconectarAsync()
         {
-            if (_mqttClient.IsConnected)
+            if (IsConnected)
             {
                 await _mqttClient.DisconnectAsync();
             }
@@ -44,21 +52,16 @@ namespace ControlBrazoRobotico
 
         public async Task EnviarComandoAsync(string comando)
         {
-            if (!IsConnected)
-            {
-                throw new InvalidOperationException("Cliente MQTT no conectado.");
-            }
+            if (!IsConnected) return;
 
-            // Agregar el salto de línea (\n) si el agente robot lo espera
-            var payload = Encoding.UTF8.GetBytes(comando.Trim() + "\n");
-
+            // Preparamos el mensaje
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(_topic)
-                .WithPayload(payload)
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithPayload(comando.Trim() + "\n") // Salto de línea para el receptor
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtMostOnce)
                 .Build();
 
-            await _mqttClient.PublishAsync(message);
+            await _mqttClient.PublishAsync(message, CancellationToken.None);
         }
     }
 }

@@ -33,7 +33,6 @@ namespace ControlBrazoRobotico
         // --- MQTT ---
         private RobotMqttService _mqttService;
         private ConexaoMode _conexaoMode = ConexaoMode.Serial;
-        private const string MqttTopic = "mi_usuario/robot/comandos";
 
         private enum ConexaoMode { Serial, Mqtt }
 
@@ -45,11 +44,9 @@ namespace ControlBrazoRobotico
 
             CargarPuertosCOM();
 
-            // Inicialización de Servicios
-            _mqttService = new RobotMqttService(MqttTopic);
-            cmbModoConexion.SelectedIndex = 0;
-
             CargarConfiguracion();
+
+            cmbModoConexion.SelectedIndex = 0;
 
             ActualizarEstadoUI();
         }
@@ -76,8 +73,12 @@ namespace ControlBrazoRobotico
             string path = "Recursos/config.json";
             if (File.Exists(path))
             {
-                string json = File.ReadAllText(path);
-                _configActual = JsonSerializer.Deserialize<AppConfig>(json);
+                try
+                {
+                    string json = File.ReadAllText(path);
+                    _configActual = JsonSerializer.Deserialize<AppConfig>(json);
+                }
+                catch { _configActual = new AppConfig(); }
             }
             else
             {
@@ -89,17 +90,37 @@ namespace ControlBrazoRobotico
 
         private void AplicarConfiguracion()
         {
-            // Aplicar rangos a los sliders
+            if (_configActual == null) return;
+
+            // 1. Aplicar rangos a los sliders
             Slider[] sliders = { sliderServo1, sliderServo2, sliderServo3, sliderServo4, sliderServo5, sliderServo6 };
             for (int i = 0; i < 6; i++)
             {
                 sliders[i].Minimum = _configActual.MinGrados[i];
                 sliders[i].Maximum = _configActual.MaxGrados[i];
+                if (sliders[i].Value < sliders[i].Minimum) sliders[i].Value = sliders[i].Minimum;
+                if (sliders[i].Value > sliders[i].Maximum) sliders[i].Value = sliders[i].Maximum;
             }
 
-            // Actualizar baudrate y MQTT service si es necesario
-            LogConsola("Configuración técnica aplicada.");
+            // 2. Actualizar Puerto Serie si está abierto
+            if (serialPort != null && serialPort.IsOpen)
+            {
+                // Si el baudrate cambió, reiniciamos el puerto
+                if (serialPort.BaudRate != _configActual.BaudRate)
+                {
+                    serialPort.Close();
+                    serialPort.BaudRate = _configActual.BaudRate;
+                    try { serialPort.Open(); } catch { }
+                }
+            }
+
+            // 3. Inicializar o Actualizar Servicio MQTT con los datos de Config
+            // Pasamos el Topic y la Dirección que vienen del JSON
+            _mqttService = new RobotMqttService(_configActual.MqttTopic, _configActual.MqttAddress);
+
+            LogConsola("Configuración técnica aplicada (MQTT y Serial actualizados).");
         }
+
 
         private void ActualizarEstadoConexion(bool online)
         {
@@ -466,19 +487,24 @@ namespace ControlBrazoRobotico
                 {
                     if (cmbPuertos.SelectedItem == null) { MostrarMensaje("Elija un puerto COM"); return; }
 
-                    serialPort = new SerialPort(cmbPuertos.SelectedItem.ToString(), 9600); // Baudrate por defecto
+                    // USAMOS EL BAUDRATE DE LA CONFIGURACIÓN
+                    serialPort = new SerialPort(cmbPuertos.SelectedItem.ToString(), _configActual.BaudRate);
                     serialPort.DataReceived += SerialPort_DataReceived;
                     serialPort.Open();
                     conectado = true;
                 }
                 else
                 {
+                    // El _mqttService ya fue creado con el Topic/IP correctos en AplicarConfiguracion()
                     await _mqttService.ConectarAsync();
                     conectado = _mqttService.IsConnected;
                 }
 
-                if (conectado) MostrarMensaje($"CONECTADO VIA {_conexaoMode.ToString().ToUpper()}");
-                ActualizarEstadoConexion(true);
+                if (conectado)
+                {
+                    MostrarMensaje($"CONECTADO VIA {_conexaoMode.ToString().ToUpper()}");
+                    ActualizarEstadoConexion(true);
+                }
             }
             catch (Exception ex)
             {

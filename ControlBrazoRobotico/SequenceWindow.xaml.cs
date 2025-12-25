@@ -35,7 +35,7 @@ namespace ControlBrazoRobotico
         public SequenceWindow(MainWindow parent, List<PosicionRobot> biblioteca)
         {
             InitializeComponent();
-            
+
             _parent = parent;
             CargarBiblioteca(biblioteca);
             CargarRutinasDeArchivo();
@@ -141,7 +141,7 @@ namespace ControlBrazoRobotico
             // 1. Instanciar tu diálogo personalizado
             ConfirmDialog dialogo = new ConfirmDialog($"¿Deseas eliminar permanentemente la rutina '{rutinaAEliminar.Nombre}'?");
             dialogo.Owner = this; // Para que aparezca centrado sobre la ventana actual
-            
+
 
             // 2. Comprobar el resultado
             if (dialogo.ShowDialog() == true)
@@ -419,7 +419,8 @@ namespace ControlBrazoRobotico
             block.Child = text;
 
             // EVENTO: Eliminar al hacer clic derecho
-            block.MouseRightButtonDown += (s, e) => {
+            block.MouseRightButtonDown += (s, e) =>
+            {
                 secuenciaActual.Remove(pos);           // Lo quita de la lógica
                 panelTimeline.Children.Remove(block); // Lo quita de la vista
             };
@@ -429,6 +430,7 @@ namespace ControlBrazoRobotico
 
         private async void BtnPlay_Click(object sender, RoutedEventArgs e)
         {
+
             if (secuenciaActual.Count == 0) return;
             if (!int.TryParse(txtDelay.Text, out int delay)) delay = 1000;
 
@@ -443,34 +445,37 @@ namespace ControlBrazoRobotico
 
             try
             {
-                for (int i = 0; i < secuenciaActual.Count; i++)
+                do
                 {
-                    // Verificamos si el usuario pidió detener ANTES de cada paso
-                    _cts.Token.ThrowIfCancellationRequested();
-
-                    var pos = secuenciaActual[i];
-                    Border bloqueVisual = null;
-
-                    if (panelTimeline.Children[i] is Border b)
+                    for (int i = 0; i < secuenciaActual.Count; i++)
                     {
-                        bloqueVisual = b;
-                        var colorOriginal = bloqueVisual.BorderBrush;
-                        bloqueVisual.BorderBrush = (SolidColorBrush)_parent.FindResource("OrangeAccent");
-                        bloqueVisual.BorderThickness = new Thickness(3);
-                        bloqueVisual.BringIntoView();
+                        // Verificamos si el usuario pidió detener ANTES de cada paso
+                        _cts.Token.ThrowIfCancellationRequested();
 
-                        // Ejecución
-                        string comando = $"ALL:{string.Join(",", pos.Angulos)}";
-                        await _parent.EnviarComando(comando, "SECUENCIA: " + pos.Nombre);
+                        var pos = secuenciaActual[i];
+                        Border bloqueVisual = null;
 
-                        // Task.Delay ahora acepta el token para cancelarse inmediatamente
-                        await Task.Delay(delay, _cts.Token);
+                        if (panelTimeline.Children[i] is Border b)
+                        {
+                            bloqueVisual = b;
+                            var colorOriginal = bloqueVisual.BorderBrush;
+                            bloqueVisual.BorderBrush = (SolidColorBrush)_parent.FindResource("OrangeAccent");
+                            bloqueVisual.BorderThickness = new Thickness(3);
+                            bloqueVisual.BringIntoView();
 
-                        // Limpiar resaltado
-                        bloqueVisual.BorderBrush = colorOriginal;
-                        bloqueVisual.BorderThickness = new Thickness(1);
+                            // Ejecución
+                            string comando = $"ALL:{string.Join(",", pos.Angulos)}";
+                            await _parent.EnviarComando(comando, "SECUENCIA: " + pos.Nombre);
+
+                            // Task.Delay ahora acepta el token para cancelarse inmediatamente
+                            await Task.Delay(delay, _cts.Token);
+
+                            // Limpiar resaltado
+                            bloqueVisual.BorderBrush = colorOriginal;
+                            bloqueVisual.BorderThickness = new Thickness(1);
+                        }
                     }
-                }
+                } while (chkBucle.IsChecked == true);
 
                 // Éxito total
                 ConfirmDialog aviso = new ConfirmDialog("¡Secuencia completada con éxito!");
@@ -493,6 +498,7 @@ namespace ControlBrazoRobotico
             finally
             {
                 // Restaurar estado de botones siempre al finalizar
+                chkBucle.IsChecked = false;
                 btnPlay.IsEnabled = true;
                 btnStop.IsEnabled = false;
                 btnLimpiar.IsEnabled = true;

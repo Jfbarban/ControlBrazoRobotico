@@ -32,7 +32,6 @@ namespace ControlBrazoRobotico
             // Si no lo tiene, añádelo en el XAML: <Button x:Name="btnCancelar" ... />
             btnCancelar.Visibility = Visibility.Collapsed;
             btnAceptar.Content = "ENTENDIDO";
-            btnAceptar.Background = new SolidColorBrush(Color.FromRgb(0, 122, 204)); // Azul en vez de rojo
         }
 
         private void BtnSi_Click(object sender, RoutedEventArgs e)
